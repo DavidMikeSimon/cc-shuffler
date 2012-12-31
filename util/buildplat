@@ -1,0 +1,47 @@
+local function put()
+  local ok = false
+  for s=1, 16 do
+    if turtle.getItemCount(s) > 0 then
+      turtle.select(s)
+      ok = true
+      break
+    end
+  end
+  
+  if ok then
+    turtle.placeDown()
+  else
+    error("Out of blocks")
+  end
+end
+
+tArgs={...}
+n = tArgs[1]
+
+turtle.forward()
+turtle.turnLeft()
+for i=1, (n/2) do
+  turtle.forward()
+end
+turtle.turnLeft()
+turtle.turnLeft()
+
+local d = 0
+for i=1,n do
+  for j=1,n do
+    put()
+    turtle.forward()
+  end
+  
+  if (d == 0) then
+    turtle.turnLeft()
+    turtle.forward()
+    turtle.turnLeft()
+    d = 1
+  else
+    turtle.turnRight()
+    turtle.forward()
+    turtle.turnRight()
+    d = 0
+  end
+end
