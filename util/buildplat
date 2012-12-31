@@ -44,4 +44,14 @@ for i=1,n do
     turtle.turnRight()
     d = 0
   end
+  turtle.forward()
+end
+
+for i=1, (n/2) do
+  turtle.forward()
+end
+if (d == 0) then
+  turtle.turnLeft()
+else
+  turtle.turnRight()
 end
