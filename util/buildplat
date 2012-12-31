@@ -55,3 +55,4 @@ if (d == 0) then
 else
   turtle.turnRight()
 end
+turtle.back()
