@@ -4,6 +4,7 @@ storage = P
 local type = type
 local string = string
 local error = error
+local loadstring = loadstring
 
 setfenv(1, P)
 
@@ -25,4 +26,8 @@ function serialize(fh, o)
   else
     error("cannot serialize a " .. type(o))
   end
+end
+
+function deserialize(s)
+  return loadstring("return " .. s)()
 end
