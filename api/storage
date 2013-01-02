@@ -1,13 +1,3 @@
-local P = {}
-storage = P
-
-local type = type
-local string = string
-local error = error
-local loadstring = loadstring
-
-setfenv(1, P)
-
 function serialize(fh, o)
   if type(o) == "number" then
     fh.write(o)
