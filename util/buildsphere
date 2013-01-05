@@ -1,0 +1,138 @@
+local function put()
+  if (not turtle) then
+    print("PUT")
+    return
+  end
+
+  local ok = false
+  for s=1, 16 do
+    if t.getItemCount(s) > 0 then
+      t.select(s)
+      ok = true
+      break
+    end
+  end
+  
+  if ok then
+    local result = t.placeDown()
+    if (not result) then
+      print("Cannot place block")
+      os.sleep(10)
+      return put()
+    end
+  else
+    print("Out of blocks")
+    os.sleep(10)
+    return put()
+  end
+end
+
+local function go(d, c)
+  d = string.upper(d)
+  c = c or 1
+  if (not turtle) then
+    print(d .. "x" .. c)
+    return
+  end
+
+  for i=1,c do
+    if turtle.getFuelLevel() < 1 then
+      t.select(16)
+      t.refuel()
+      if turtle.getFuelLevel() < 1 then
+        print("Out of fuel")
+        os.sleep(10)
+        return go(d, c)
+      end
+    end
+
+    local f = nil
+    if     (d == "U") then f = turtle.up
+    elseif (d == "D") then f = turtle.down
+    elseif (d == "L") then f = turtle.turnLeft
+    elseif (d == "R") then f = turtle.turnRight
+    elseif (d == "F") then f = turtle.forward
+    elseif (d == "B") then f = turtle.back
+    else error("Unknown turtle direction " .. d)
+    end
+
+    local result = f()
+    if (not result) then
+      print("Cannot move " .. d)
+      os.sleep(10)
+      return go(d, c)
+    end
+  end
+end
+
+local function put_go(d,n)
+  for i=1,n do
+    put()
+    go(d)
+  end
+end
+
+local function round(n)
+  return math.floor(n+0.5)
+end
+
+local function match_evenness(tgt, n)
+  n = round(n)
+  if (tgt%2 ~= n%2) then
+    n = n -1
+  end
+  return n
+end
+
+local tArgs={...}
+local diameter = tArgs[1]
+local perc = tonumber(tArgs[2] or 1)
+
+for h=1,diameter-1 do
+  if ((h/diameter) > perc) then
+    break
+  end
+
+  go("U")
+
+  local circ_diam = round(diameter*math.sin((h/diameter)*math.pi))
+  local lines = {}
+  for w=1,circ_diam-1 do
+    local line = match_evenness(circ_diam-1, circ_diam*math.sin((w/circ_diam)*math.pi))
+    table.insert(lines, line)
+  end
+
+  go("F", round(#lines/2))
+  go("L")
+  go("F", round(lines[1]/2))
+  go("L")
+
+  for iter=1,2 do
+    local out = 0
+    for i,v in ipairs(lines) do
+      diff = v - out
+      if (diff ~= 0) then
+        go("L")
+        if (diff > 0) then
+          put_go("F", diff)
+        else
+          put_go("B", -diff)
+        end
+        go("R")
+      else
+        put_go("F", 1)
+      end
+      go("F")
+      out = v
+    end
+  end
+
+  go("F", round(lines[1]/2))
+  go("L")
+  go("F", round(#lines/2))
+  go("L")
+end
+
+for h=1, diameter-1 do
+  go("D")
+end
