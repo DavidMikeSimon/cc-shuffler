@@ -6,15 +6,15 @@ local function put()
 
   local ok = false
   for s=1, 16 do
-    if t.getItemCount(s) > 0 then
-      t.select(s)
+    if turtle.getItemCount(s) > 0 then
+      turtle.select(s)
       ok = true
       break
     end
   end
   
   if ok then
-    local result = t.placeDown()
+    local result = turtle.placeDown()
     if (not result) then
       print("Cannot place block")
       os.sleep(10)
@@ -84,55 +84,54 @@ local function match_evenness(tgt, n)
   return n
 end
 
+local function init_pattern(s)
+  local p = {}
+  p["size"] = s
+  for h=1,s do
+    p[h] = {}
+    for y=1,s do
+      p[h][y] = {}
+      for x=1,s do
+        p[h][y][x] = "."
+      end
+    end
+  end
+  return p
+end
+
+local function build_pattern(p)
+  if (not turtle) then
+    for h=1,p["size"] do
+      for y=1,p["size"] do
+        for x=1,p["size"] do
+          io.write(p[h][y][x])
+        end
+        print("")
+      end
+      print("")
+    end
+    return
+  end
+end
+
 local tArgs={...}
 local diameter = tArgs[1]
 local perc = tonumber(tArgs[2] or 1)
 
-for h=1,diameter-1 do
+p = init_pattern(diameter)
+for h=1,diameter do
   if ((h/diameter) > perc) then
     break
   end
 
-  go("U")
-
   local circ_diam = round(diameter*math.sin((h/diameter)*math.pi))
-  local lines = {}
-  for w=1,circ_diam-1 do
-    local line = match_evenness(circ_diam-1, circ_diam*math.sin((w/circ_diam)*math.pi))
-    table.insert(lines, line)
-  end
-
-  go("F", round(#lines/2))
-  go("L")
-  go("F", round(lines[1]/2))
-  go("L")
-
-  for iter=1,2 do
-    local out = 0
-    for i,v in ipairs(lines) do
-      diff = v - out
-      if (diff ~= 0) then
-        go("L")
-        if (diff > 0) then
-          put_go("F", diff)
-        else
-          put_go("B", -diff)
-        end
-        go("R")
-      else
-        put_go("F", 1)
-      end
-      go("F")
-      out = v
+  local y_offset = round((diameter-circ_diam)/2)
+  for y=1,circ_diam do
+    local line = match_evenness(circ_diam-1, circ_diam*math.sin((y/circ_diam)*math.pi))
+    local x_offset = round((diameter-line)/2) + 1
+    for x=1,line do
+      p[h][y+y_offset][x+x_offset] = "0"
     end
   end
-
-  go("F", round(lines[1]/2))
-  go("L")
-  go("F", round(#lines/2))
-  go("L")
 end
-
-for h=1, diameter-1 do
-  go("D")
-end
+build_pattern(p)
