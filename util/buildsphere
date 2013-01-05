@@ -103,7 +103,7 @@ end
 local function build_pattern(p, x0, y0)
   if (not turtle) then
     print_pattern(p)
-    --return
+    return
   end
 
   local tx, ty = x0, y0
@@ -123,19 +123,19 @@ local function build_pattern(p, x0, y0)
 
     go("U")
 
-    if (ty < min_y) then
-      go("F", min_y - ty)
-    elseif (ty > min_y) then
-      go("B", ty - min_y)
+    if (tx < min_x) then
+      go("F", min_x - tx)
+    elseif (tx > min_x) then
+      go("B", tx - min_x)
     end
-    if (tx ~= min_x) then
-      go("R", 1)
-      if (tx < min_x) then
-        go("F", min_x - tx)
-      else
-        go("B", tx - min_x)
-      end
+    if (ty ~= min_y) then
       go("L", 1)
+      if (ty < min_y) then
+        go("F", min_y - ty)
+      else
+        go("B", ty - min_y)
+      end
+      go("R", 1)
     end
     tx, ty = min_x, min_y
 
@@ -150,21 +150,30 @@ local function build_pattern(p, x0, y0)
         if p[h][y][x] == "X" then
           put()
         end
-        go("F")
-        tx = tx + scan_offset
+        if (x ~= scan_max_x) then
+          go("F")
+          tx = tx + scan_offset
+        end
       end
 
+      if (y ~= scan_max_y) then
       if (scan_offset > 0) then
-        go("R")
+        go("L")
         go("F")
-        go("R")
+        go("L")
       else
-        go("L")
+        go("R")
         go("F")
-        go("L")
+        go("R")
       end
       ty = ty + 1
       scan_offset = -scan_offset
+      end
+    end
+    
+    if (scan_offset == -1) then
+      go("R", 2)
+      scan_offset = 1
     end
   end
 end
