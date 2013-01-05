@@ -87,18 +87,85 @@ local function init_pattern(s)
   return p
 end
 
-local function build_pattern(p)
-  if (not turtle) then
-    for h=1,p["size"] do
-      for y=1,p["size"] do
-        for x=1,p["size"] do
-          io.write(p[h][y][x])
-        end
-        print("")
+local function print_pattern(p)
+  for h=1,p["size"] do
+    for y=1,p["size"] do
+      for x=1,p["size"] do
+        io.write(p[h][y][x])
       end
       print("")
     end
-    return
+    print("")
+  end
+end
+
+
+local function build_pattern(p, x0, y0)
+  if (not turtle) then
+    print_pattern(p)
+    --return
+  end
+
+  local tx, ty = x0, y0
+  for h=1,p["size"] do
+    local min_x, min_y = p["size"], p["size"]
+    local max_x, max_y = 1, 1
+    for y=1,p["size"] do
+      for x=1,p["size"] do
+        if p[h][y][x] ~= "." then
+          if x < min_x then min_x = x end
+          if y < min_y then min_y = y end
+          if x > max_x then max_x = x end
+          if y > max_y then max_y = y end
+        end
+      end
+    end
+
+    go("U")
+
+    if (ty < min_y) then
+      go("F", min_y - ty)
+    elseif (ty > min_y) then
+      go("B", ty - min_y)
+    end
+    if (tx ~= min_x) then
+      go("R", 1)
+      if (tx < min_x) then
+        go("F", min_x - tx)
+      else
+        go("B", tx - min_x)
+      end
+      go("L", 1)
+    end
+    tx, ty = min_x, min_y
+
+    local scan_offset = 1
+    for y=min_y,max_y do
+      local scan_min_x, scan_max_x = min_x, max_x
+      if scan_offset < 0 then
+        scan_min_x = max_x
+        scan_max_x = min_x
+      end
+      for x=scan_min_x,scan_max_x,scan_offset do
+        if p[h][y][x] == "X" then
+          put()
+        end
+        go("F")
+        tx = tx + scan_offset
+      end
+
+      if (scan_offset > 0) then
+        go("R")
+        go("F")
+        go("R")
+      else
+        go("L")
+        go("F")
+        go("L")
+      end
+      ty = ty + 1
+      scan_offset = -scan_offset
+    end
   end
 end
 
@@ -141,7 +208,7 @@ local function mp_circle(layer, radius, x0, y0)
 end
 
 local tArgs={...}
-local diameter = tArgs[1]
+local diameter = tonumber(tArgs[1])
 --local perc = tonumber(tArgs[2] or 1)
 
 if (diameter%2 ~= 1) then
@@ -164,4 +231,4 @@ p = init_pattern(diameter)
 for i,r in ipairs(c_rads) do
   mp_circle(p[i], r, origin, origin)
 end
-build_pattern(p)
+build_pattern(p, 0, origin, origin)
