@@ -72,18 +72,6 @@ local function put_go(d,n)
   end
 end
 
-local function round(n)
-  return math.floor(n+0.5)
-end
-
-local function match_evenness(tgt, n)
-  n = round(n)
-  if (tgt%2 ~= n%2) then
-    n = n -1
-  end
-  return n
-end
-
 local function init_pattern(s)
   local p = {}
   p["size"] = s
@@ -114,24 +102,66 @@ local function build_pattern(p)
   end
 end
 
+-- Stolen shamelessly from Wikipedia's example implementation
+local function mp_circle(layer, radius, x0, y0)
+  if (radius == 0) then
+    layer[x0][y0] = "X"
+    return
+  end
+
+  local f = 1 - radius;
+  local ddF_x = 1;
+  local ddF_y = -2 * radius;
+  local x = 0;
+  local y = radius;
+ 
+  layer[x0][y0 + radius] = "X"
+  layer[x0][y0 - radius] = "X"
+  layer[x0 + radius][y0] = "X"
+  layer[x0 - radius][y0] = "X"
+ 
+  while (x < y) do
+    if (f >= 0) then
+      y = y - 1
+      ddF_y = ddF_y + 2
+      f = f + ddF_y
+    end
+    x = x + 1
+    ddF_x = ddF_x + 2
+    f = f + ddF_x
+    layer[x0 + x][y0 + y] = "X"
+    layer[x0 - x][y0 + y] = "X"
+    layer[x0 + x][y0 - y] = "X"
+    layer[x0 - x][y0 - y] = "X"
+    layer[x0 + y][y0 + x] = "X"
+    layer[x0 - y][y0 + x] = "X"
+    layer[x0 + y][y0 - x] = "X"
+    layer[x0 - y][y0 - x] = "X"
+  end
+end
+
 local tArgs={...}
 local diameter = tArgs[1]
-local perc = tonumber(tArgs[2] or 1)
+--local perc = tonumber(tArgs[2] or 1)
 
+if (diameter%2 ~= 1) then
+  -- FIXME This should be easy to work around
+  error("Requires an odd diameter")
+end
+
+c_rads = {}
+for h=1,math.floor(diameter/2) do
+  c_rad = diameter/2 * math.sin((h/diameter)*math.pi)
+  table.insert(c_rads, math.floor(c_rad))
+end
+table.insert(c_rads, c_rads[#c_rads])
+for h=math.floor(#c_rads-1),1,-1 do
+  table.insert(c_rads, c_rads[h])
+end
+
+local origin = math.ceil(diameter/2)
 p = init_pattern(diameter)
-for h=1,diameter do
-  if ((h/diameter) > perc) then
-    break
-  end
-
-  local circ_diam = round(diameter*math.sin((h/diameter)*math.pi))
-  local y_offset = round((diameter-circ_diam)/2)
-  for y=1,circ_diam do
-    local line = match_evenness(circ_diam-1, circ_diam*math.sin((y/circ_diam)*math.pi))
-    local x_offset = round((diameter-line)/2) + 1
-    for x=1,line do
-      p[h][y+y_offset][x+x_offset] = "0"
-    end
-  end
+for i,r in ipairs(c_rads) do
+  mp_circle(p[i], r, origin, origin)
 end
 build_pattern(p)
