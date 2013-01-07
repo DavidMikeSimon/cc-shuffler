@@ -230,14 +230,55 @@ for h=1,math.floor(diameter/2) do
   c_rad = diameter/2 * math.sin((h/diameter)*math.pi)
   table.insert(c_rads, math.floor(c_rad))
 end
-table.insert(c_rads, c_rads[#c_rads])
-for h=math.floor(#c_rads-1),1,-1 do
-  table.insert(c_rads, c_rads[h])
-end
 
+-- Build a circle outline for each layer from the bottom to the middle
 local origin = math.ceil(diameter/2)
 p = init_pattern(diameter)
 for i,r in ipairs(c_rads) do
   mp_circle(p[i], r, origin, origin)
 end
+
+-- Fill in the bottom
+for y=1,p["size"] do
+  min_x = p["size"]
+  max_x = 0
+  x_count = 0
+  for x=1,p["size"] do
+    if (p[2][y][x] == "X") then
+      x_count = x_count + 1
+      if (x > max_x) then max_x = x end
+      if (x < min_x) then min_x = x end
+    end
+  end
+  if (x_count == 2) then
+    for x=min_x+1,max_x-1 do
+      p[1][y][x] = "X"
+    end
+  end
+end
+
+-- Fill in gaps between layers
+for h=2,#c_rads do
+  ref_h = h + 1
+  for y=2,p["size"]-1 do
+    for x=2,p["size"]-1 do
+      if (
+        p[h][y][x] ~= "X" and
+        (p[h][y-1][x] == "X" or p[ref_h][y-1][x] == "X") and
+        (p[h][y+1][x] == "X" or p[ref_h][y+1][x] == "X") and
+        (p[h][y][x-1] == "X" or p[ref_h][y][x-1] == "X") and
+        (p[h][y][x+1] == "X" or p[ref_h][y][x+1] == "X")
+      ) then
+        p[h][y][x] = "X"
+      end
+    end
+  end
+end
+
+-- Copy and flip the bottom of the sphere to the top
+for h=#c_rads+2,p["size"] do
+  p[h] = p[p["size"]-h+1]
+end
+p[#c_rads+1] = p[#c_rads]
+
 build_pattern(p, 0, origin, origin)
