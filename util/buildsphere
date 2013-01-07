@@ -1,6 +1,12 @@
+gbl_puts = 0
+gbl_moves = 0
+gbl_turns = 0
+
 local function put()
+  gbl_puts = gbl_puts + 1
+
   if (not turtle) then
-    print("PUT")
+    --print("PUT")
     return
   end
 
@@ -30,8 +36,15 @@ end
 local function go(d, c)
   d = string.upper(d)
   c = c or 1
+
+  if (d == "L" or d == "R") then
+    gbl_turns = gbl_turns + 1
+  else
+    gbl_moves = gbl_moves + 1
+  end
+
   if (not turtle) then
-    print(d .. "x" .. c)
+    --print(d .. "x" .. c)
     return
   end
 
@@ -103,7 +116,6 @@ end
 local function build_pattern(p, x0, y0)
   if (not turtle) then
     print_pattern(p)
-    return
   end
 
   local tx, ty = x0, y0
@@ -282,3 +294,9 @@ end
 p[#c_rads+1] = p[#c_rads]
 
 build_pattern(p, 0, origin, origin)
+
+if (not turtle) then
+  print("Puts: " .. gbl_puts)
+  print("Moves: " .. gbl_moves)
+  print("Turns: " .. gbl_turns)
+end
