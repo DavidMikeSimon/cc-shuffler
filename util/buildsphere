@@ -156,9 +156,9 @@ local function build_pattern(p, x0, y0)
         end
       end
 
-      local facing_col = (facing == {1, 0} and 1 or 2)
+      local facing_col = ((facing[1] == 1) and 1 or 2)
       if tgt_offset[facing_col] ~= 0 then
-        if tgt_offset[facing_col] > 1 then
+        if tgt_offset[facing_col] > 0 then
           go("F", tgt_offset[facing_col])
         else
           go("B", tgt_offset[-facing_col])
@@ -166,16 +166,16 @@ local function build_pattern(p, x0, y0)
         pos[facing_col] = pos[facing_col] + tgt_offset[facing_col]
       end
 
-      local alt_facing_col = (facing_col == 1 and 2 or 1)
+      local alt_facing_col = ((facing_col == 1) and 2 or 1)
       if tgt_offset[alt_facing_col] ~= 0 then
-        if facing == {0,1} then
+        if facing[1] == 0 then
           go("L")
           facing = {1,0}
         else
           go("R")
           facing = {0,1}
         end
-        if tgt_offset[alt_facing_col] > 1 then
+        if tgt_offset[alt_facing_col] > 0 then
           go("F", tgt_offset[alt_facing_col])
         else
           go("B", tgt_offset[-alt_facing_col])
