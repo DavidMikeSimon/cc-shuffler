@@ -118,74 +118,73 @@ local function build_pattern(p, x0, y0)
     print_pattern(p)
   end
 
-  local tx, ty = x0, y0
+  local pos = {y0, x0}
+  local facing = {0, 1}
   for h=1,p["size"] do
-    local min_x, min_y = p["size"], p["size"]
-    local max_x, max_y = 1, 1
-    for y=1,p["size"] do
-      for x=1,p["size"] do
-        if p[h][y][x] ~= "." then
-          if x < min_x then min_x = x end
-          if y < min_y then min_y = y end
-          if x > max_x then max_x = x end
-          if y > max_y then max_y = y end
-        end
-      end
-    end
-
     go("U")
 
-    if (tx < min_x) then
-      go("F", min_x - tx)
-    elseif (tx > min_x) then
-      go("B", tx - min_x)
-    end
-    if (ty ~= min_y) then
-      go("L", 1)
-      if (ty < min_y) then
-        go("F", min_y - ty)
-      else
-        go("B", ty - min_y)
-      end
-      go("R", 1)
-    end
-    tx, ty = min_x, min_y
-
-    local scan_offset = 1
-    for y=min_y,max_y do
-      local scan_min_x, scan_max_x = min_x, max_x
-      if scan_offset < 0 then
-        scan_min_x = max_x
-        scan_max_x = min_x
-      end
-      for x=scan_min_x,scan_max_x,scan_offset do
-        if p[h][y][x] == "X" then
-          put()
-        end
-        if (x ~= scan_max_x) then
-          go("F")
-          tx = tx + scan_offset
-        end
-      end
-
-      if (y ~= scan_max_y) then
-      if (scan_offset > 0) then
-        go("L")
-        go("F")
-        go("L")
-      else
-        go("R")
-        go("F")
-        go("R")
-      end
-      ty = ty + 1
-      scan_offset = -scan_offset
+    local tgts = {}
+    for y=1,p["size"] do
+      for x=1,p["size"] do
+        if (p[h][y][x] == "X") then table.insert(tgts, {y,x}) end
       end
     end
     
-    if (scan_offset == -1) then
-      go("R", 2)
-      scan_offset = 1
+    while (#tgts > 0) do
+      local tgt_i, tgt_dist, tgt_offset = nil, nil, nil
+      for i,v in ipairs(tgts) do
+        local offset = {v[1]-pos[1],v[2]-pos[2]}
+        local dir = {0,0}
+        if (offset[1] ~= 0) then dir[1] = offset[1] > 0 and 1 or -1 end
+        if (offset[2] ~= 0) then dir[2] = offset[2] > 0 and 1 or -1 end
+
+        -- Figure out how easy it is to get there
+        local dist = math.abs(offset[1]) + math.abs(offset[2])
+        if (dir ~= facing) then
+          -- If it's not in the direction we're already moving, penalize
+          dist = dist + 1
+        end
+        if ({math.abs(offset[1]), math.abs(offset[2])} ~= facing) then
+          -- If we'd have to turn, penalize
+          dist = dist + 1
+        end
+
+        if (not tgt_dist or dist < tgt_dist) then
+          tgt_i = i
+          tgt_dist = dist
+          tgt_offset = offset
+        end
+
+        local facing_col = (facing == {1, 0} and 1 or 2)
+        if offset[facing_col] ~= 0 then
+          if offset[facing_col] > 1 then
+            go("F", offset[facing_col])
+          else
+            go("B", offset[-facing_col])
+          end
+          pos[facing_col] = pos[facing_col] + offset[facing_col]
+        end
+
+        local alt_facing_col = (facing_col == 1 and 2 or 1)
+        if offset[alt_facing_col] ~= 0 then
+          if facing == {0,1} then
+            go("L")
+            facing = {1,0}
+          else
+            go("R")
+            facing = {0,1}
+          end
+          if offset[alt_facing_col] > 1 then
+            go("F", offset[alt_facing_col])
+          else
+            go("B", offset[-alt_facing_col])
+          end
+          pos[alt_facing_col] = pos[alt_facing_col] + offset[alt_facing_col]
+        end
+
+        put()
+        table.remove(tgts, tgt_i)
+      end
     end
   end
 end
