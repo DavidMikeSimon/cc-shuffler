@@ -51,7 +51,7 @@ function crc32(s)
   local crc, l, i = 0xFFFFFFFF, string.len(s)
   for i = 1, l, 1 do
     crc = bit.bxor(
-      bit.rshift(crc, 8),
+      bit.brshift(crc, 8),
       crc_consts[bit.band(bit.bxor(crc, string.byte(s, i)), 
       0xFF) + 1]
     )
