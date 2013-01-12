@@ -4,23 +4,31 @@ function get_item_desc(item_id)
   desc = storage.get("item_descs", item_id)
   if desc == nil then
     print("What is the name of this item?")
-    desc = {name=read()}
+    name = read()
+    stack_limit = turtle.getItemCount(1) + turtle.getItemSpace(1)
+    desc = {item_id=item_id, name=name, quantity=0, stack_limit=stack_limit}
     storage.set("item_descs", item_id, desc)
   end
   return desc
 end
 
 function store_item(desc)
-  loc = storage.get("item_chests", desc["name"])
-  if loc == nil then
+  if desc.loc == nil then
     free_locs = storage.get("free_locs", "free_locs")
     next_loc = table.remove(free_locs, 1)
     if next_loc == nil then
       error("No more free chest locations")
     end
-    print("Storing at " .. next_loc["s"] .. "," .. next_loc("h") .. "," .. next_loc("d"))
-    turtle.dropUp()
+    storage.set("free_locs", "free_locs", free_locs)
+    desc.loc = next_loc
   end
+
+  loc = desc.loc
+  print("Storing at " .. loc["s"] .. "," .. loc("h") .. "," .. loc("d"))
+  -- TODO This should probably be done by chester on deposit
+  desc.quantity = desc.quantity + turtle.getItemCount(1)
+  turtle.dropUp()
+  storage.set("item_descs", desc.item_id, desc)
 end
 
 function examine_item()

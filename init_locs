@@ -1,0 +1,9 @@
+free_locs = {}
+for h=1,5 do
+  for d=0,3 do
+    for s=1,5 do
+      table.insert(free_locs, {s=s,d=d,h=h})
+    end
+  end
+end
+storage.set("free_locs", "free_locs", free_locs)
