@@ -1,10 +1,10 @@
-is = peripheral.wrap("bottom")
+is = peripheral.wrap("back")
 
 function get_item_desc(item_id)
   desc = storage.get("item_descs", item_id)
   if desc == nil then
     print("What is the name of this item?")
-    desc = {name=read("*")}
+    desc = {name=read()}
     storage.set("item_descs", item_id, desc)
   end
   return desc
@@ -24,10 +24,10 @@ function store_item(desc)
 end
 
 function examine_item()
-  r = is.list(1)
+  r = is.list(4)
   n = 0
   item_id = nil
-  for k,v in ipairs(r) do
+  for k,v in pairs(r) do
     n = n + 1
     item_id = k
   end
@@ -40,6 +40,10 @@ function examine_item()
     desc = get_item_desc(item_id)
     store_item(desc)
   end
+end
+
+while turtle.drop() do
+  -- Nothing
 end
 
 while true do
