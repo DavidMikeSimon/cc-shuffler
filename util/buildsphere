@@ -85,17 +85,24 @@ local function put_go(d,n)
   end
 end
 
-local function init_pattern(s)
+local function init_2d_pattern(s)
+  local p = {}
+  p["size"] = s
+  for y=1,s do
+    p[y] = {}
+    for x=1,s do
+      p[y][x] = "."
+    end
+  end
+  return p
+end
+
+
+local function init_3d_pattern(s)
   local p = {}
   p["size"] = s
   for h=1,s do
-    p[h] = {}
-    for y=1,s do
-      p[h][y] = {}
-      for x=1,s do
-        p[h][y][x] = "."
-      end
-    end
+    p[h] = init_2d_pattern(s)
   end
   return p
 end
@@ -235,16 +242,25 @@ if (diameter%2 ~= 1) then
   -- FIXME This should be easy to work around
   error("Requires an odd diameter")
 end
+local origin = math.ceil(diameter/2)
 
 c_rads = {}
-for h=1,math.floor(diameter/2) do
-  c_rad = diameter/2 * math.sin((h/diameter)*math.pi)
-  table.insert(c_rads, math.floor(c_rad))
+base = init_2d_pattern(diameter)
+mp_circle(base, origin-1, origin, origin)
+for y=1,origin do
+  min_x = diameter
+  max_x = 0
+  for x=0,diameter do
+    if base[y][x] == "X" then
+      if x < min_x then min_x = x end
+      if x > max_x then max_x = x end
+    end
+  end
+  table.insert(c_rads, math.floor((max_x - min_x)/2))
 end
 
 -- Build a circle outline for each layer from the bottom to the middle
-local origin = math.ceil(diameter/2)
-p = init_pattern(diameter)
+p = init_3d_pattern(diameter)
 for i,r in ipairs(c_rads) do
   mp_circle(p[i], r, origin, origin)
 end
