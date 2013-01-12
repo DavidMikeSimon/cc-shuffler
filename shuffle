@@ -1,0 +1,52 @@
+is = peripheral.wrap("bottom")
+
+function get_item_desc(item_id)
+  desc = storage.get("item_descs", item_id)
+  if desc == nil then
+    print("What is the name of this item?")
+    desc = {name=read("*")}
+    storage.set("item_descs", item_id, desc)
+  end
+  return desc
+end
+
+function store_item(desc)
+  loc = storage.get("item_chests", desc["name"])
+  if loc == nil then
+    free_locs = storage.get("free_locs", "free_locs")
+    next_loc = table.remove(free_locs, 1)
+    if next_loc == nil then
+      error("No more free chest locations")
+    end
+    print("Storing at " .. next_loc["s"] .. "," .. next_loc("h") .. "," .. next_loc("d"))
+    turtle.dropUp()
+  end
+end
+
+function examine_item()
+  r = is.list(1)
+  n = 0
+  item_id = nil
+  for k,v in ipairs(r) do
+    n = n + 1
+    item_id = k
+  end
+
+  if item_id == nil then
+    error("Can't identify item")
+  elseif n > 1 then
+    error("Multiple responses from IS")
+  else
+    desc = get_item_desc(item_id)
+    store_item(desc)
+  end
+end
+
+while true do
+  sucked = turtle.suck()
+  if sucked then
+    examine_item()
+  else
+    os.sleep(0.5)
+  end
+end
