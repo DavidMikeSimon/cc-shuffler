@@ -8,9 +8,9 @@ function _serialize(fh, o)
   elseif type(o) == "table" then
     fh.write("{\n")
     for k,v in pairs(o) do
-      fh.write("  ")
+      fh.write("[")
       _serialize(fh, k)
-      fh.write(" = ")
+      fh.write("] = ")
       _serialize(fh, v)
       fh.write(",\n")
     end
