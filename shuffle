@@ -24,7 +24,7 @@ function store_item(desc)
   end
 
   loc = desc.loc
-  print("Storing at " .. loc["s"] .. "," .. loc("h") .. "," .. loc("d"))
+  print("Storing at " .. loc["s"] .. "," .. loc["h"] .. "," .. loc["d"])
   -- TODO This should probably be done by chester on deposit
   desc.quantity = desc.quantity + turtle.getItemCount(1)
   turtle.dropUp()
