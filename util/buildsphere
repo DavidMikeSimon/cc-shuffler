@@ -1,201 +1,4 @@
-gbl_puts = 0
-gbl_moves = 0
-gbl_turns = 0
-
-local function put()
-  gbl_puts = gbl_puts + 1
-
-  if (not turtle) then
-    --print("PUT")
-    return
-  end
-
-  local ok = false
-  for s=1, 16 do
-    if turtle.getItemCount(s) > 0 then
-      turtle.select(s)
-      ok = true
-      break
-    end
-  end
-  
-  if ok then
-    local result = turtle.placeDown()
-    if (not result) then
-      print("Cannot place block")
-      os.sleep(10)
-      return put()
-    end
-  else
-    print("Out of blocks")
-    os.sleep(10)
-    return put()
-  end
-end
-
-local function go(d, c)
-  d = string.upper(d)
-  c = c or 1
-
-  if (d == "L" or d == "R") then
-    gbl_turns = gbl_turns + 1
-  else
-    gbl_moves = gbl_moves + 1
-  end
-
-  if (not turtle) then
-    --print(d .. "x" .. c)
-    return
-  end
-
-  for i=1,c do
-    if turtle.getFuelLevel() < 1 then
-      t.select(16)
-      t.refuel()
-      if turtle.getFuelLevel() < 1 then
-        print("Out of fuel")
-        os.sleep(10)
-        return go(d, c)
-      end
-    end
-
-    local f = nil
-    if     (d == "U") then f = turtle.up
-    elseif (d == "D") then f = turtle.down
-    elseif (d == "L") then f = turtle.turnLeft
-    elseif (d == "R") then f = turtle.turnRight
-    elseif (d == "F") then f = turtle.forward
-    elseif (d == "B") then f = turtle.back
-    else error("Unknown turtle direction " .. d)
-    end
-
-    local result = f()
-    if (not result) then
-      print("Cannot move " .. d)
-      os.sleep(10)
-      return go(d, c)
-    end
-  end
-end
-
-local function put_go(d,n)
-  for i=1,n do
-    put()
-    go(d)
-  end
-end
-
-local function init_2d_pattern(s)
-  local p = {}
-  p["size"] = s
-  for y=1,s do
-    p[y] = {}
-    for x=1,s do
-      p[y][x] = "."
-    end
-  end
-  return p
-end
-
-
-local function init_3d_pattern(s)
-  local p = {}
-  p["size"] = s
-  for h=1,s do
-    p[h] = init_2d_pattern(s)
-  end
-  return p
-end
-
-local function print_pattern(p)
-  for h=1,p["size"] do
-    for y=1,p["size"] do
-      for x=1,p["size"] do
-        io.write(p[h][y][x])
-      end
-      print("")
-    end
-    print("")
-  end
-end
-
-
-local function build_pattern(p, x0, y0)
-  if (not turtle) then
-    print_pattern(p)
-  end
-
-  local pos = {y0, x0}
-  local facing = {0, 1}
-  for h=1,p["size"] do
-    go("U")
-
-    local tgts = {}
-    for y=1,p["size"] do
-      for x=1,p["size"] do
-        if (p[h][y][x] == "X") then table.insert(tgts, {y,x}) end
-      end
-    end
-    
-    while (#tgts > 0) do
-      local tgt_i, tgt_dist, tgt_offset = nil, nil, nil
-      for i,v in ipairs(tgts) do
-        local offset = {v[1]-pos[1],v[2]-pos[2]}
-        local dir = {0,0}
-        if (offset[1] ~= 0) then dir[1] = offset[1] > 0 and 1 or -1 end
-        if (offset[2] ~= 0) then dir[2] = offset[2] > 0 and 1 or -1 end
-
-        -- Figure out how easy it is to get there
-        local dist = math.abs(offset[1]) + math.abs(offset[2])
-        if (dir ~= facing) then
-          -- If it's not in the direction we're already moving, penalize
-          dist = dist + 1
-        end
-        if ({math.abs(offset[1]), math.abs(offset[2])} ~= facing) then
-          -- If we'd have to turn, penalize
-          dist = dist + 1
-        end
-
-        if (not tgt_dist or dist < tgt_dist) then
-          tgt_i = i
-          tgt_dist = dist
-          tgt_offset = offset
-        end
-      end
-
-      local facing_col = ((facing[1] == 1) and 1 or 2)
-      if tgt_offset[facing_col] ~= 0 then
-        if tgt_offset[facing_col] > 0 then
-          go("F", tgt_offset[facing_col])
-        else
-          go("B", tgt_offset[-facing_col])
-        end
-        pos[facing_col] = pos[facing_col] + tgt_offset[facing_col]
-      end
-
-      local alt_facing_col = ((facing_col == 1) and 2 or 1)
-      if tgt_offset[alt_facing_col] ~= 0 then
-        if facing[1] == 0 then
-          go("L")
-          facing = {1,0}
-        else
-          go("R")
-          facing = {0,1}
-        end
-        if tgt_offset[alt_facing_col] > 0 then
-          go("F", tgt_offset[alt_facing_col])
-        else
-          go("B", tgt_offset[-alt_facing_col])
-        end
-        pos[alt_facing_col] = pos[alt_facing_col] + tgt_offset[alt_facing_col]
-      end
-
-      put()
-      table.remove(tgts, tgt_i)
-    end
-  end
-end
-
+-- Midpoint circle algorithm
 -- Stolen shamelessly from Wikipedia's example implementation
 local function mp_circle(layer, radius, x0, y0)
   if (radius == 0) then
@@ -245,7 +48,7 @@ end
 local origin = math.ceil(diameter/2)
 
 c_rads = {}
-base = init_2d_pattern(diameter)
+base = pattern.init_2d_pattern(diameter)
 mp_circle(base, origin-1, origin, origin)
 for y=1,origin do
   min_x = diameter
@@ -260,7 +63,7 @@ for y=1,origin do
 end
 
 -- Build a circle outline for each layer from the bottom to the middle
-p = init_3d_pattern(diameter)
+p = pattern.init_3d_pattern(diameter)
 for i,r in ipairs(c_rads) do
   mp_circle(p[i], r, origin, origin)
 end
@@ -308,10 +111,7 @@ for h=#c_rads+2,p["size"] do
 end
 p[#c_rads+1] = p[#c_rads]
 
-build_pattern(p, 0, origin, origin)
-
-if (not turtle) then
-  print("Puts: " .. gbl_puts)
-  print("Moves: " .. gbl_moves)
-  print("Turns: " .. gbl_turns)
+counters = pattern.build(p, 0, origin, origin)
+for k,v in pairs(counters) do
+  print(k .. ": " .. v)
 end

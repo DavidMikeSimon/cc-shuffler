@@ -1,0 +1,153 @@
+function _transient_error(msg)
+  error({"transient", msg}) -- Intended to be caught by _perform_action
+end
+
+function _try_place(act) 
+  if not turtle then return end
+  
+  local f = nil
+  if     act == "pdn" then f = turtle.placeDown
+  elseif act == "pup" then f = turtle.placeUp
+  elseif act == "pfw" then f = turtle.place
+  else error("Unknown place action " .. act)
+  end
+
+  local ok = false
+  for s=1, 16 do
+    if turtle.getItemCount(s) > 0 then
+      turtle.select(s)
+      ok = true
+      break
+    end
+  end
+  
+  if ok then
+    local placed = f()
+    if not placed then
+      _transient_error("Space is occupied")
+    end
+  else
+    _transient_error("Inventory is empty")
+  end
+end
+
+function _try_move(act)
+  if not turtle then return end
+
+  if turtle.getFuelLevel() < 1 then
+    t.select(16)
+    t.refuel()
+    if turtle.getFuelLevel() < 1 then
+      _transient_error("Out of fuel, supply to slot 16")
+    end
+  end
+
+  local f = nil
+  if     (act == "up")  then f = turtle.up
+  elseif (act == "dwn") then f = turtle.down
+  elseif (act == "fwd") then f = turtle.forward
+  elseif (act == "bck") then f = turtle.back
+  else error("Unknown move action " .. act)
+  end
+
+  local moved = f()
+  if not moved then
+    _transient_error("Path is blocked")
+  end
+end
+
+function _try_turn(act)
+  if not turtle then return end
+
+  local f = nil
+  if     (act == "lt") then f = turtle.turnLeft
+  elseif (act == "rt") then f = turtle.turnRight
+  else error("Unknown turn action " .. act)
+  end
+
+  local turned = f()
+  if not turned then
+    _transient_error("Could not turn")
+  end
+end
+
+_action_fn_table = {
+  place = _try_place,
+  move = _try_move,
+  turn = _try_turn,
+}
+
+_action_cat_table = {
+  up = "move",
+  dwn = "move",
+  fwd = "move",
+  bck = "move",
+  rt = "turn",
+  lt = "turn",
+  pdn = "place",
+  pup = "place",
+  pfw = "place",
+}
+
+function _perform_action(act, counter)
+  local cat = _action_cat_table[act]
+  if cat == nil then
+    error("Invalid action: " .. act)
+  end
+  local f = _action_fn_table[cat]
+  while true do
+    local status, err = pcall(f, act)
+    if status then
+      break
+    elseif type(err) == "table" and err[1] == "transient" then
+      print("Failed " .. cat .. "." .. act .. ": " .. err[2])
+      os.sleep(5)
+    else
+      error(err)
+    end
+  end
+  _add_to_counter(counter, cat .. " actions")
+end
+
+function _add_to_counter(c, field)
+  if c[field] == nil then
+    c[field] = 1
+  else
+    c[field] = c[field] + 1
+  end
+end
+
+function run_fsm(init_env, state_table)
+  local state = state_table["start"]
+  if state == nil then
+    error("No start state given")
+  end
+  local env = init_env
+  local counter = {}
+
+  while true do
+    local result = state(env)
+    _add_to_counter(counter, "state steps")
+
+    local actions = result["actions"]
+    if actions ~= nil then
+      for i,act in ipairs(actions) do
+        _perform_action(act, counter)
+      end
+    end
+
+    env = result["env"]
+    if env == nil then env = {} end
+
+    local state_name = result["state"]
+    if state_name == "stop" then
+      break
+    end
+    state = state_table[state_name]
+    if state == nil then
+      error("Unknown state " .. state_name)
+    end
+  end
+
+  return counter
+end

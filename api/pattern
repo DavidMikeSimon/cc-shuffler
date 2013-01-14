@@ -1,0 +1,111 @@
+local function init_2d_pattern(s)
+  local p = {}
+  p["size"] = s
+  for y=1,s do
+    p[y] = {}
+    for x=1,s do
+      p[y][x] = "."
+    end
+  end
+  return p
+end
+
+
+local function init_3d_pattern(s)
+  local p = {}
+  p["size"] = s
+  for h=1,s do
+    p[h] = init_2d_pattern(s)
+  end
+  return p
+end
+
+local function display(p)
+  for h=1,p["size"] do
+    for y=1,p["size"] do
+      for x=1,p["size"] do
+        io.write(p[h][y][x])
+      end
+      print("")
+    end
+    print("")
+  end
+end
+
+local function build(p, x0, y0)
+  if (not turtle) then
+    display(p)
+  end
+
+  -- TODO Implement me as an FSM
+
+  local pos = {y0, x0}
+  local facing = {0, 1}
+  for h=1,p["size"] do
+    go("U")
+
+    local tgts = {}
+    for y=1,p["size"] do
+      for x=1,p["size"] do
+        if (p[h][y][x] == "X") then table.insert(tgts, {y,x}) end
+      end
+    end
+    
+    while (#tgts > 0) do
+      local tgt_i, tgt_dist, tgt_offset = nil, nil, nil
+      for i,v in ipairs(tgts) do
+        local offset = {v[1]-pos[1],v[2]-pos[2]}
+        local dir = {0,0}
+        if (offset[1] ~= 0) then dir[1] = offset[1] > 0 and 1 or -1 end
+        if (offset[2] ~= 0) then dir[2] = offset[2] > 0 and 1 or -1 end
+
+        -- Figure out how easy it is to get there
+        local dist = math.abs(offset[1]) + math.abs(offset[2])
+        if (dir ~= facing) then
+          -- If it's not in the direction we're already moving, penalize
+          dist = dist + 1
+        end
+        if ({math.abs(offset[1]), math.abs(offset[2])} ~= facing) then
+          -- If we'd have to turn, penalize
+          dist = dist + 1
+        end
+
+        if (not tgt_dist or dist < tgt_dist) then
+          tgt_i = i
+          tgt_dist = dist
+          tgt_offset = offset
+        end
+      end
+
+      local facing_col = ((facing[1] == 1) and 1 or 2)
+      if tgt_offset[facing_col] ~= 0 then
+        if tgt_offset[facing_col] > 0 then
+          go("F", tgt_offset[facing_col])
+        else
+          go("B", tgt_offset[-facing_col])
+        end
+        pos[facing_col] = pos[facing_col] + tgt_offset[facing_col]
+      end
+
+      local alt_facing_col = ((facing_col == 1) and 2 or 1)
+      if tgt_offset[alt_facing_col] ~= 0 then
+        if facing[1] == 0 then
+          go("L")
+          facing = {1,0}
+        else
+          go("R")
+          facing = {0,1}
+        end
+        if tgt_offset[alt_facing_col] > 0 then
+          go("F", tgt_offset[alt_facing_col])
+        else
+          go("B", tgt_offset[-alt_facing_col])
+        end
+        pos[alt_facing_col] = pos[alt_facing_col] + tgt_offset[alt_facing_col]
+      end
+
+      put()
+      table.remove(tgts, tgt_i)
+    end
+  end
+end
