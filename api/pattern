@@ -71,11 +71,11 @@ function build(p, x0, y0)
 
   fsm.run_fsm(start_env, {
     start = function(env)
-      return {state="begin_h_level", env=env}
+      return {state="begin_h_level", env=env, actions={"up"}}
     end,
 
     begin_h_level = function(env)
-      if env.h > env.p.size then
+      if env.h >= env.p.size then
         return {state="stop"}
       end
 
