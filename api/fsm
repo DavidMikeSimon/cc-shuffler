@@ -1,5 +1,5 @@
 function _transient_error(msg)
-  error({"transient", msg}) -- Intended to be caught by _perform_action
+  error("TRANSIENT " .. msg) -- Intended to be caught by _perform_action
 end
 
 function _try_place(act) 
@@ -35,8 +35,8 @@ function _try_move(act)
   if not turtle then return end
 
   if turtle.getFuelLevel() < 1 then
-    t.select(16)
-    t.refuel()
+    turtle.select(16)
+    turtle.refuel()
     if turtle.getFuelLevel() < 1 then
       _transient_error("Out of fuel, supply to slot 16")
     end
@@ -99,8 +99,8 @@ function _perform_action(act, counter)
     local status, err = pcall(f, act)
     if status then
       break
-    elseif type(err) == "table" and err[1] == "transient" then
-      print("Failed " .. cat .. "." .. act .. ": " .. err[2])
+    elseif string.sub(err, 1, 10) == "TRANSIENT " then
+      print("Failed " .. cat .. "." .. act .. ": " .. string.sub(err, 11))
       os.sleep(5)
     else
       error(err)
