@@ -84,15 +84,19 @@ for y=1,p["size"] do
   if first_x ~= nil and first_x ~= last_x then
     x_mid = math.floor((first_x+last_x)/2)
     h = #c_rads
-    for x=first_x,last_x do
-      h_offset = -1
-      if x > x_mid then
-        h_offset = 1
-      end
-      if p[h + h_offset][y][x] == "X" then
-        h = h + h_offset
+    for x=first_x,x_mid do
+      if h == 1 then
+        p[h][y][x] = "X"
+      elseif p[h-1][y][x] == "X" then
+        h = h-1
       else
         p[h][y][x] = "X"
+      end
+    end
+    for x=x_mid+1,last_x do
+      src_x = first_x + (last_x - x)
+      for h=1,#c_rads do
+        p[h][y][x] = p[h][y][src_x]
       end
     end
   end
