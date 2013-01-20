@@ -1,5 +1,5 @@
 function _transient_error(msg)
-  error("TRANSIENT " .. msg) -- Intended to be caught by _perform_action
+  error("++TRANSIENT++" .. msg) -- Intended to be caught by _perform_action
 end
 
 function _try_place(act) 
@@ -99,11 +99,14 @@ function _perform_action(act, counter)
     local status, err = pcall(f, act)
     if status then
       break
-    elseif string.sub(err, 1, 10) == "TRANSIENT " then
-      print("Failed " .. cat .. "." .. act .. ": " .. string.sub(err, 11))
-      os.sleep(5)
     else
-      error(err)
+      p = string.find(err, "++TRANSIENT++", 1, true)
+      if p ~= nil then
+        print("Failed " .. cat .. "." .. act .. ": " .. string.sub(err, p))
+        os.sleep(5)
+      else
+        error(err)
+      end
     end
   end
   _add_to_counter(counter, cat .. " actions")
