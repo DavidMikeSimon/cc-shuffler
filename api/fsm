@@ -249,9 +249,9 @@ function run_fsm(init_env, fsm_name, state_table)
 
   prev_snapshot = storage.get("fsm_snapshot", fsm_name)
   if prev_snapshot ~= nil then
-    state_name = prev_snaphost.state_name
+    state_name = prev_snapshot.state_name
     env = prev_snapshot.env
-    counter = prev_snaphost.counter
+    counter = prev_snapshot.counter
     actions = prev_snapshot.actions
   else
     state_name = "start"
