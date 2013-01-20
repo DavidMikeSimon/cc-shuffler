@@ -137,7 +137,10 @@ function _try_deposit(act)
   end
 
   turtle.select(1)
-  turtle.place() or _transient_error("Cannot place ender chest")
+  placed = turtle.place()
+  if not placed then
+    _transient_error("Cannot place ender chest")
+  end
   for i=2,16 do
     if turtle.getItemCount(i) > 0 then
       turtle.select(i)
