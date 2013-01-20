@@ -1,4 +1,8 @@
-function _serialize(fh, o)
+function _serialize(fh, o, depth)
+  if depth > 16 then
+    error("Depth limit exceeded in serialization")
+  end
+
   if type(o) == "number" then
     fh.write(o)
   elseif type(o) == "nil" or type(o) == "boolean" then
@@ -9,9 +13,9 @@ function _serialize(fh, o)
     fh.write("{\n")
     for k,v in pairs(o) do
       fh.write("[")
-      _serialize(fh, k)
+      _serialize(fh, k, depth+1)
       fh.write("] = ")
-      _serialize(fh, v)
+      _serialize(fh, v, depth+1)
       fh.write(",\n")
     end
     fh.write("}\n")
@@ -50,7 +54,7 @@ function set(db, k, v)
   subhash[k] = v
 
   fh = fs.open(tmp_path, "w")
-  _serialize(fh, subhash)
+  _serialize(fh, subhash, 1)
   fh.close()
   fs.delete(path)
   fs.move(tmp_path, path)
