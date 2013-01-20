@@ -224,6 +224,26 @@ function _add_to_counter(c, field)
   end
 end
 
+function _fsm_step(env, state_table, state_name, counter)
+  env._fuel_level = turtle.getFuelLevel()
+  env._item_counts = {}
+  env._item_space = {}
+  env._empty_slots = {}
+  for i=1,16 do
+    env._item_counts[i] = turtle.getItemCount(i)
+    env._item_space[i] = turtle.getItemSpace(i)
+    if env._item_counts[i] == 0 then
+      table.insert(env._empty_slots, i)
+    end
+  end
+
+  if state_name == nil then error("No state name given") end
+  state = state_table[state_name]
+  if state == nil then error("Unknown state " .. state_name) end
+  _add_to_counter(counter, "state steps")
+  return state(env)
+end
+
 function run_fsm(init_env, fsm_name, state_table)
   local state_name, env, counter, actions
 
@@ -246,7 +266,8 @@ function run_fsm(init_env, fsm_name, state_table)
       _perform_actions(act, counter)
     else
       result = _fsm_step(env, state_table, state_name, counter)
-      if result.state == "stop" then break end
+      state_name = result.state
+      if state_name == "stop" then break end
       if result.env ~= nil then env = result.env else env = {} end
       if result.actions ~= nil then actions = result.actions else actions = {} end
     end
@@ -261,24 +282,4 @@ function run_fsm(init_env, fsm_name, state_table)
 
   storage.delete("fsm_snapshot", fsm_name)
   return counter
-end
-
-function _fsm_step(env, state_table, state_name, counter)
-  env._fuel_level = turtle.getFuelLevel()
-  env._item_counts = {}
-  env._item_space = {}
-  env._empty_slots = {}
-  for i=1,16 do
-    env._item_counts[i] = turtle.getItemCount(i)
-    env._item_space[i] = turtle.getItemSpace(i)
-    if env._item_counts[i] == 0 then
-      table.insert(env._empty_slots, i)
-    end
-  end
-
-  if state_name == nil then error("No state name given") end
-  state = state_table[state_name]
-  if state == nil then error("Unknown state " .. state_name) end
-  _add_to_counter(counter, "state steps")
-  return state(env)
 end
