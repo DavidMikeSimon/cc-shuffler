@@ -131,7 +131,7 @@ end
 
 function _try_deposit(act)
   -- FIXME dec is "Deposit all items into ender chest from slot 1"
-  -- Which is clearly way too much to have in a single action
+  -- which is clearly way too much to have in a single action.
   if act ~= "dec" then
     error("Unknown deposit action " .. act)
   end
@@ -224,55 +224,61 @@ function _add_to_counter(c, field)
   end
 end
 
-function run_fsm(init_env, state_table)
-  local state = state_table.start
-  if state == nil then
-    error("No start state given")
+function run_fsm(init_env, fsm_name, state_table)
+  local state_name, env, counter, actions
+
+  prev_snapshot = storage.get("fsm_snapshot", fsm_name)
+  if prev_snapshot ~= nil then
+    state_name = prev_snaphost.state_name
+    env = prev_snapshot.env
+    counter = prev_snaphost.counter
+    actions = prev_snapshot.actions
+  else
+    state_name = "start"
+    env = init_env
+    counter = {}
+    actions = {}
   end
-  local env = init_env
-  local counter = {}
 
   while true do
-    env._fuel_level = turtle.getFuelLevel()
-    env._item_counts = {}
-    env._item_space = {}
-    env._empty_slots = {}
-    for i=1,16 do
-      env._item_counts[i] = turtle.getItemCount(i)
-      env._item_space[i] = turtle.getItemSpace(i)
-      if env._item_counts[i] == 0 then
-        table.insert(env._empty_slots, i)
-      end
+    if #actions > 0 then
+      act = table.remove(actions, 1)
+      _perform_actions(act, counter)
+    else
+      result = _fsm_step(env, state_table, state_name, counter)
+      if result.state == "stop" then break end
+      if result.env ~= nil then env = result.env else env = {} end
+      if result.actions ~= nil then actions = result.actions else actions = {} end
     end
 
-    local result = state(env)
-    _add_to_counter(counter, "state steps")
-
-    local actions = result.actions
-    if actions ~= nil then
-      for i,act in ipairs(actions) do
-        _perform_action(act, counter)
-      end
-    end
-
-    env = result.env
-    if env == nil then env = {} end
-
-    local state_name = result.state
-    if state_name == "stop" then
-      break
-    end
-    if state_name == nil then
-      error("No state returned")
-    end
-    state = state_table[state_name]
-    if state == nil then
-      error("Unknown state " .. state_name)
-    end
+    storage.set("fsm_snapshot", fsm_name, {
+      state_name = state_name,
+      env = env,
+      counter = counter,
+      actions = actions
+    })
   end
 
+  storage.delete("fsm_snapshot", fsm_name)
   return counter
 end
 
-function resume_fsm()
+function _fsm_step(env, state_table, state_name, counter)
+  env._fuel_level = turtle.getFuelLevel()
+  env._item_counts = {}
+  env._item_space = {}
+  env._empty_slots = {}
+  for i=1,16 do
+    env._item_counts[i] = turtle.getItemCount(i)
+    env._item_space[i] = turtle.getItemSpace(i)
+    if env._item_counts[i] == 0 then
+      table.insert(env._empty_slots, i)
+    end
+  end
+
+  if state_name == nil then error("No state name given") end
+  state = state_table[state_name]
+  if state == nil then error("Unknown state " .. state_name) end
+  _add_to_counter(counter, "state steps")
+  return state(env)
 end

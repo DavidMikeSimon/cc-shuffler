@@ -3,7 +3,7 @@ local start_env = {
   tunnel_height = tonumber(tArgs[1])
 }
 
-return fsm.run_fsm(start_env, {
+return fsm.run_fsm(start_env, "spiralmine", {
   start = function(env)
     env.seg_len = 1
     env.seg_step = 1
@@ -41,9 +41,11 @@ return fsm.run_fsm(start_env, {
     end
 
     if #env._empty_slots < 8 or env._fuel_level < 200 then
-      table.insert(actions, "rt")
-      table.insert(actions, "rt")
       table.insert(actions, "rfl")
+
+      -- Except for the very first column, we will always have space behind
+      table.insert(actions, "rt")
+      table.insert(actions, "rt")
       table.insert(actions, "dec")
       table.insert(actions, "rt")
       table.insert(actions, "rt")
