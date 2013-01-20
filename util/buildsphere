@@ -68,37 +68,30 @@ for i,r in ipairs(c_rads) do
   mp_circle(p[i], r, origin, origin)
 end
 
--- Fill in the bottom
-for y=1,p["size"] do
-  min_x = p["size"]
-  max_x = 0
-  x_count = 0
-  for x=1,p["size"] do
-    if (p[2][y][x] == "X") then
-      x_count = x_count + 1
-      if (x > max_x) then max_x = x end
-      if (x < min_x) then min_x = x end
-    end
-  end
-  if (x_count == 2) then
-    for x=min_x+1,max_x-1 do
-      p[1][y][x] = "X"
-    end
-  end
-end
-
 -- Fill in gaps between layers
-for h=2,#c_rads do
-  ref_h = h + 1
-  for y=2,p["size"]-1 do
-    for x=2,p["size"]-1 do
-      if (
-        p[h][y][x] ~= "X" and
-        (p[h][y-1][x] == "X" or p[ref_h][y-1][x] == "X") and
-        (p[h][y+1][x] == "X" or p[ref_h][y+1][x] == "X") and
-        (p[h][y][x-1] == "X" or p[ref_h][y][x-1] == "X") and
-        (p[h][y][x+1] == "X" or p[ref_h][y][x+1] == "X")
-      ) then
+for y=1,p["size"] do
+  first_x = nil
+  last_x = nil
+  for x=1,p["size"] do
+    if p[#c_rads][y][x] == "X" then
+      if first_x == nil then
+        first_x = x
+      end
+      last_x = x
+    end
+  end
+
+  if first_x ~= nil and first_x ~= last_x then
+    x_mid = math.floor((first_x+last_x)/2)
+    h = #c_rads
+    for x=first_x,last_x do
+      h_offset = -1
+      if x > x_mid then
+        h_offset = 1
+      end
+      if p[h + h_offset][y][x] == "X" then
+        h = h + h_offset
+      else
         p[h][y][x] = "X"
       end
     end
