@@ -118,7 +118,7 @@ function _add_to_counter(c, field)
 end
 
 function run_fsm(init_env, state_table)
-  local state = state_table["start"]
+  local state = state_table.start
   if state == nil then
     error("No start state given")
   end
@@ -129,19 +129,22 @@ function run_fsm(init_env, state_table)
     local result = state(env)
     _add_to_counter(counter, "state steps")
 
-    local actions = result["actions"]
+    local actions = result.actions
     if actions ~= nil then
       for i,act in ipairs(actions) do
         _perform_action(act, counter)
       end
     end
 
-    env = result["env"]
+    env = result.env
     if env == nil then env = {} end
 
-    local state_name = result["state"]
+    local state_name = result.state
     if state_name == "stop" then
       break
+    end
+    if state_name == nil then
+      error("No state returned")
     end
     state = state_table[state_name]
     if state == nil then

@@ -1,6 +1,6 @@
-local function init_2d_pattern(s)
+function init_2d_pattern(s)
   local p = {}
-  p["size"] = s
+  p.size = s
   for y=1,s do
     p[y] = {}
     for x=1,s do
@@ -11,19 +11,19 @@ local function init_2d_pattern(s)
 end
 
 
-local function init_3d_pattern(s)
+function init_3d_pattern(s)
   local p = {}
-  p["size"] = s
+  p.size = s
   for h=1,s do
     p[h] = init_2d_pattern(s)
   end
   return p
 end
 
-local function display(p)
-  for h=1,p["size"] do
-    for y=1,p["size"] do
-      for x=1,p["size"] do
+function display(p)
+  for h=1,p.size do
+    for y=1,p.size do
+      for x=1,p.size do
         io.write(p[h][y][x])
       end
       print("")
@@ -32,80 +32,114 @@ local function display(p)
   end
 end
 
-local function build(p, x0, y0)
-  if (not turtle) then
-    display(p)
-  end
+local function _route_closest_tgt(tgts, pos)
+  local tgt_i, tgt_dist, tgt_offset = nil, nil, nil
+  for i,v in ipairs(tgts) do
+    local offset = {v[1]-pos[1],v[2]-pos[2]}
+    local dir = {0,0}
+    if (offset[1] ~= 0) then dir[1] = offset[1] > 0 and 1 or -1 end
+    if (offset[2] ~= 0) then dir[2] = offset[2] > 0 and 1 or -1 end
 
-  -- TODO Implement me as an FSM
-
-  local pos = {y0, x0}
-  local facing = {0, 1}
-  for h=1,p["size"] do
-    go("U")
-
-    local tgts = {}
-    for y=1,p["size"] do
-      for x=1,p["size"] do
-        if (p[h][y][x] == "X") then table.insert(tgts, {y,x}) end
-      end
+    -- Figure out how easy it is to get there
+    local dist = math.abs(offset[1]) + math.abs(offset[2])
+    if (dir ~= facing) then
+      -- If it's not in the direction we're already moving, penalize
+      dist = dist + 1
     end
-    
-    while (#tgts > 0) do
-      local tgt_i, tgt_dist, tgt_offset = nil, nil, nil
-      for i,v in ipairs(tgts) do
-        local offset = {v[1]-pos[1],v[2]-pos[2]}
-        local dir = {0,0}
-        if (offset[1] ~= 0) then dir[1] = offset[1] > 0 and 1 or -1 end
-        if (offset[2] ~= 0) then dir[2] = offset[2] > 0 and 1 or -1 end
+    if ({math.abs(offset[1]), math.abs(offset[2])} ~= facing) then
+      -- If we'd have to turn, penalize
+      dist = dist + 1
+    end
 
-        -- Figure out how easy it is to get there
-        local dist = math.abs(offset[1]) + math.abs(offset[2])
-        if (dir ~= facing) then
-          -- If it's not in the direction we're already moving, penalize
-          dist = dist + 1
-        end
-        if ({math.abs(offset[1]), math.abs(offset[2])} ~= facing) then
-          -- If we'd have to turn, penalize
-          dist = dist + 1
-        end
-
-        if (not tgt_dist or dist < tgt_dist) then
-          tgt_i = i
-          tgt_dist = dist
-          tgt_offset = offset
-        end
-      end
-
-      local facing_col = ((facing[1] == 1) and 1 or 2)
-      if tgt_offset[facing_col] ~= 0 then
-        if tgt_offset[facing_col] > 0 then
-          go("F", tgt_offset[facing_col])
-        else
-          go("B", tgt_offset[-facing_col])
-        end
-        pos[facing_col] = pos[facing_col] + tgt_offset[facing_col]
-      end
-
-      local alt_facing_col = ((facing_col == 1) and 2 or 1)
-      if tgt_offset[alt_facing_col] ~= 0 then
-        if facing[1] == 0 then
-          go("L")
-          facing = {1,0}
-        else
-          go("R")
-          facing = {0,1}
-        end
-        if tgt_offset[alt_facing_col] > 0 then
-          go("F", tgt_offset[alt_facing_col])
-        else
-          go("B", tgt_offset[-alt_facing_col])
-        end
-        pos[alt_facing_col] = pos[alt_facing_col] + tgt_offset[alt_facing_col]
-      end
-
-      put()
-      table.remove(tgts, tgt_i)
+    if (not tgt_dist or dist < tgt_dist) then
+      tgt_i = i
+      tgt_dist = dist
+      tgt_offset = offset
     end
   end
+
+  return {idx=tgt_i, offset=tgt_offset}
+end
+
+function build(p, x0, y0)
+  start_env = {
+    p = p,
+    pos = {y0, x0},
+    facing = {0, 1},
+    h = 1
+  }
+
+  run_fsm(start_env, {
+    start = function(env)
+      return {state="begin_h_level", env=env}
+    end,
+
+    begin_h_level = function(env)
+      if env.h > env.p.size then
+        return {state="stop"}
+      end
+
+      actions = {"up"}
+      env.h = env.h + 1
+      env.tgts = {}
+      for y=1,env.p.size do
+        for x=1,env.p.size do
+          if (env.p[env.h][y][x] == "X") then
+            table.insert(env.tgts, {y,x})
+          end
+        end
+      end
+
+      return {state="place_next_tgt", env=env, actions=actions}
+    end,
+
+    place_next_tgt = function(env)
+      if #env.tgts == 0 then
+        return {state="begin_h_level", env=env}
+      end
+
+      tgt = _route_closest_tgt(env.tgts, env.pos)
+      actions = {}
+
+      local col_a = ((env.facing[1] == 1) and 1 or 2)
+      if tgt.offset[col_a] ~= 0 then
+        if tgt.offset[col_a] > 0 then
+          for i=1,tgt.offset[col_a] do
+            table.insert(actions, "fwd")
+          end
+        else
+          for i=1,-tgt.offset[col_a] do
+            table.insert(actions, "bck")
+          end
+        end
+        env.pos[col_a] = env.pos[col_a] + tgt.offset[col_a]
+      end
+
+      local col_b = ((col_a == 1) and 2 or 1)
+      if tgt.offset[col_b] ~= 0 then
+        if env.facing[1] == 0 then
+          table.insert(actions, "lt")
+          env.facing = {1,0}
+        else
+          table.insert(actions, "rt")
+          env.facing = {0,1}
+        end
+        if tgt.offset[col_b] > 0 then
+          for i=1,tgt.offset[col_b] do
+            table.insert(actions, "fwd")
+          end
+        else
+          for i=1,-tgt.offset[col_b] do
+            table.insert(actions, "bck")
+          end
+        end
+        env.pos[col_b] = env.pos[col_b] + tgt.offset[col_b]
+      end
+
+      table.insert(actions, "pdn")
+      table.remove(env.tgts, tgt.idx)
+
+      return {state="place_next_tgt", env=env, actions=actions}
+    end
+  })
 end
