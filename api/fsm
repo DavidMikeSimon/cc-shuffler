@@ -68,14 +68,14 @@ end
 function _try_dig(act)
   local detect_f, dig_f = nil, nil
   if (act == "dup") then
-    detect_f = turtle.detectUp()
-    dig_f = turtle.digUp()
+    detect_f = turtle.detectUp
+    dig_f = turtle.digUp
   elseif (act == "ddn") then
-    detect_f = turtle.detectDown()
-    dig_f = turtle.digDown()
+    detect_f = turtle.detectDown
+    dig_f = turtle.digDown
   elseif (act == "dfw") then
-    detect_f = turtle.detect()
-    dig_f = turtle.dig()
+    detect_f = turtle.detect
+    dig_f = turtle.dig
   else error("Unknown dig action " .. act)
   end
 
