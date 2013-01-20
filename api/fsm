@@ -3,8 +3,6 @@ function _transient_error(msg)
 end
 
 function _try_place(act) 
-  if not turtle then return end
-  
   local f = nil
   if     act == "pdn" then f = turtle.placeDown
   elseif act == "pup" then f = turtle.placeUp
@@ -32,8 +30,6 @@ function _try_place(act)
 end
 
 function _try_move(act)
-  if not turtle then return end
-
   if turtle.getFuelLevel() < 1 then
     turtle.select(16)
     turtle.refuel()
@@ -43,10 +39,10 @@ function _try_move(act)
   end
 
   local f = nil
-  if     (act == "up")  then f = turtle.up
-  elseif (act == "dwn") then f = turtle.down
-  elseif (act == "fwd") then f = turtle.forward
-  elseif (act == "bck") then f = turtle.back
+  if     (act == "up") then f = turtle.up
+  elseif (act == "dn") then f = turtle.down
+  elseif (act == "fw") then f = turtle.forward
+  elseif (act == "bk") then f = turtle.back
   else error("Unknown move action " .. act)
   end
 
@@ -57,8 +53,6 @@ function _try_move(act)
 end
 
 function _try_turn(act)
-  if not turtle then return end
-
   local f = nil
   if     (act == "lt") then f = turtle.turnLeft
   elseif (act == "rt") then f = turtle.turnRight
@@ -71,22 +65,125 @@ function _try_turn(act)
   end
 end
 
+function _try_dig(act)
+  local detect_f, dig_f = nil, nil
+  if (act == "dup") then
+    detect_f = turtle.detectUp()
+    dig_f = turtle.digUp()
+  elseif (act == "ddn") then
+    detect_f = turtle.detectDown()
+    dig_f = turtle.digDown()
+  elseif (act == "dfw") then
+    detect_f = turtle.detect()
+    dig_f = turtle.dig()
+  else error("Unknown dig action " .. act)
+  end
+
+  while detect_f() do
+    dig_f()
+  end
+end
+
+function _try_attack(act)
+  local f = nil
+  if     (act == "aup") then f = turtle.attackUp
+  elseif (act == "adn") then f = turtle.attackDown
+  elseif (act == "afw") then f = turtle.attack
+  else error("Unknown attack action " .. act)
+  end
+
+  local attacked = f()
+  if not attacked then
+    _transient_error("Could not attack")
+  end
+end
+
+function _try_mine(act)
+  if (act ~= "mfw" and act ~= "mdn" and act ~= "mup") then
+    error("Unknown mine action " .. act)
+  end
+
+  local sub_act = string.sub(act, 2)
+  while true do
+    _try_dig("d" .. sub_act)
+    local status, err = pcall(_try_move, sub_act)
+    if status then
+      break
+    elseif string.find(err, "++TRANSIENT++", 1, true) then
+      -- Couldn't move that way, maybe some jerk is standing there
+      _try_attack("a" .. sub_act)
+    end
+  end
+end
+
+function _try_refuel(act)
+  if act ~= "rfl" then
+    error("Unknown refuel action " .. act)
+  end
+
+  for i=1,16 do
+    if turtle.getItemCount(i) > 0 then
+      turtle.select(i)
+      turtle.refuel()
+    end
+  end
+end
+
+function _try_deposit(act)
+  -- FIXME dec is "Deposit all items into ender chest from slot 1"
+  -- Which is clearly way too much to have in a single action
+  if act ~= "dec" then
+    error("Unknown deposit action " .. act)
+  end
+
+  turtle.select(1)
+  turtle.place() or _transient_error("Cannot place ender chest")
+  for i=2,16 do
+    if turtle.getItemCount(i) > 0 then
+      turtle.select(i)
+      while true do
+        dropped = turtle.drop()
+        if dropped then break end
+        os.sleep(1)
+      end
+    end
+  end
+  turtle.select(1)
+  turtle.dig()
+end
+
 _action_fn_table = {
-  place = _try_place,
   move = _try_move,
   turn = _try_turn,
+  place = _try_place,
+  dig = _try_dig,
+  attack = _try_attack,
+  mine = _try_mine,
+  refuel = _try_refuel,
+  deposit = _try_deposit
 }
 
 _action_cat_table = {
   up = "move",
-  dwn = "move",
-  fwd = "move",
-  bck = "move",
+  dn = "move",
+  fw = "move",
+  bk = "move",
   rt = "turn",
   lt = "turn",
-  pdn = "place",
   pup = "place",
+  pdn = "place",
   pfw = "place",
+  dup = "dig",
+  ddn = "dig",
+  dfw = "dig",
+  aup = "attack",
+  adn = "attack",
+  afw = "attack",
+  mup = "mine",
+  mdn = "mine",
+  mfw = "mine",
+  rfl = "refuel",
+  dec = "deposit"
 }
 
 function _perform_action(act, counter)
@@ -96,6 +193,7 @@ function _perform_action(act, counter)
   end
   local f = _action_fn_table[cat]
   while true do
+    if not turtle then break end
     local status, err = pcall(f, act)
     if status then
       break
@@ -132,6 +230,18 @@ function run_fsm(init_env, state_table)
   local counter = {}
 
   while true do
+    env._fuel_level = turtle.getFuelLevel()
+    env._item_counts = {}
+    env._item_space = {}
+    env._empty_slots = {}
+    for i=1,16 do
+      env._item_counts[i] = turtle.getItemCount(i)
+      env._item_space[i] = turtle.getItemSpace(i)
+      if env._item_counts[i] == 0 then
+        table.insert(env._empty_slots, i)
+      end
+    end
+
     local result = state(env)
     _add_to_counter(counter, "state steps")
 
@@ -159,4 +269,7 @@ function run_fsm(init_env, state_table)
   end
 
   return counter
+end
+
+function resume_fsm()
 end

@@ -104,11 +104,11 @@ function build(p, x0, y0)
       if tgt.offset[col_a] ~= 0 then
         if tgt.offset[col_a] > 0 then
           for i=1,tgt.offset[col_a] do
-            table.insert(actions, "fwd")
+            table.insert(actions, "fw")
           end
         else
           for i=1,-tgt.offset[col_a] do
-            table.insert(actions, "bck")
+            table.insert(actions, "bk")
           end
         end
         env.pos[col_a] = env.pos[col_a] + tgt.offset[col_a]
@@ -125,11 +125,11 @@ function build(p, x0, y0)
         end
         if tgt.offset[col_b] > 0 then
           for i=1,tgt.offset[col_b] do
-            table.insert(actions, "fwd")
+            table.insert(actions, "fw")
           end
         else
           for i=1,-tgt.offset[col_b] do
-            table.insert(actions, "bck")
+            table.insert(actions, "bk")
           end
         end
         env.pos[col_b] = env.pos[col_b] + tgt.offset[col_b]
