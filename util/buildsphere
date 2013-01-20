@@ -104,9 +104,17 @@ end
 
 -- Copy and flip the bottom of the sphere to the top
 for h=#c_rads+2,p["size"] do
-  p[h] = p[p["size"]-h+1]
+  for y=1,p["size"] do
+    for x=1,p["size"] do 
+      p[h][y][x] = p[p["size"]-h+1][y][x]
+    end
+  end
 end
-p[#c_rads+1] = p[#c_rads]
+for y=1,p["size"] do
+  for x=1,p["size"] do 
+    p[#c_rads+1][y][x] = p[#c_rads][y][x]
+  end
+end
 
 counters = pattern.build(p, origin, origin)
 for k,v in pairs(counters) do
