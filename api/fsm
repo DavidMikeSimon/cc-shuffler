@@ -100,9 +100,12 @@ function _perform_action(act, counter)
     if status then
       break
     else
-      p = string.find(err, "++TRANSIENT++", 1, true)
+      local p = nil
+      if type(err) == "string" then
+        p = string.find(err, "++TRANSIENT++", 1, true)
+      end
       if p ~= nil then
-        print("Failed " .. cat .. "." .. act .. ": " .. string.sub(err, p))
+        print("Failed " .. cat .. "." .. act .. ": " .. string.sub(err, p+13))
         os.sleep(5)
       else
         error(err)
