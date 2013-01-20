@@ -263,7 +263,7 @@ function run_fsm(init_env, fsm_name, state_table)
   while true do
     if #actions > 0 then
       act = table.remove(actions, 1)
-      _perform_actions(act, counter)
+      _perform_action(act, counter)
     else
       result = _fsm_step(env, state_table, state_name, counter)
       state_name = result.state
