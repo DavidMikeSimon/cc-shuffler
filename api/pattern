@@ -63,7 +63,7 @@ end
 
 function build(p, x0, y0)
   start_env = {
-    p = p,
+    _pattern = p,
     pos = {y0, x0},
     facing = {0, 1},
     h = 1
@@ -75,14 +75,14 @@ function build(p, x0, y0)
     end,
 
     begin_h_level = function(env)
-      if env.h > env.p.size then
+      if env.h > env._pattern.size then
         return {state="stop"}
       end
 
       env.tgts = {}
-      for y=1,env.p.size do
-        for x=1,env.p.size do
-          if (env.p[env.h][y][x] == "X") then
+      for y=1,env._pattern.size do
+        for x=1,env._pattern.size do
+          if (env._pattern[env.h][y][x] == "X") then
             table.insert(env.tgts, {y,x})
           end
         end
