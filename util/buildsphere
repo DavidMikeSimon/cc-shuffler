@@ -111,7 +111,7 @@ for h=#c_rads+2,p["size"] do
 end
 p[#c_rads+1] = p[#c_rads]
 
-counters = pattern.build(p, 0, origin, origin)
+counters = pattern.build(p, origin, origin)
 for k,v in pairs(counters) do
   print(k .. ": " .. v)
 end

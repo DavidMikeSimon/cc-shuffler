@@ -69,7 +69,7 @@ function build(p, x0, y0)
     h = 1
   }
 
-  fsm.run_fsm(start_env, {
+  return fsm.run_fsm(start_env, {
     start = function(env)
       return {state="begin_h_level", env=env, actions={"up"}}
     end,
