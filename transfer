@@ -1,0 +1,44 @@
+local tArgs={...}
+local start_env = {
+  args = tArgs
+}
+
+fsm.run_fsm(start_env, "transfer", {
+  start = function(env)
+    env.pos = 1
+    env.stages = {}
+    for i,a in ipairs(env.args) do
+      stage = {}
+      if a ~= "skip" then
+        string.gsub(a, "(%a+)", function(act)
+          table.insert(stage, act)
+        end)
+      end
+      table.insert(env.stages, stage)
+    end
+    return {state="xfer", env=env}
+  end,
+
+  xfer = function(env)
+    actions = {}
+    for i,a in ipairs(env.stages[env.pos]) do
+      table.insert(actions, a)
+    end
+    if env.pos < #env.stages then
+      env.pos = env.pos + 1
+      table.insert(actions, "fw")
+      return {actions=actions, state="xfer", env=env}
+    else
+      return {actions=actions, state="reset", env=env}
+    end
+  end,
+
+  reset = function(env)
+    actions = {}
+    while env.pos > 1 do
+      table.insert(actions, "bk")
+      env.pos = env.pos - 1
+    end
+    return {actions=actions, state="xfer", env=env}
+  end
+})

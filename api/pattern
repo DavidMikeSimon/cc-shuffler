@@ -62,6 +62,7 @@ local function _route_closest_tgt(tgts, pos)
 end
 
 function build(p, x0, y0)
+  -- FIXME We'll lose _pattern if the FSM resumes
   start_env = {
     _pattern = p,
     pos = {y0, x0},

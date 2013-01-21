@@ -92,10 +92,7 @@ function _try_attack(act)
   else error("Unknown attack action " .. act)
   end
 
-  local attacked = f()
-  if not attacked then
-    _transient_error("Could not attack")
-  end
+  f() -- If we couldn't attack, just means there was no target
 end
 
 function _try_mine(act)
@@ -129,15 +126,63 @@ function _try_refuel(act)
   end
 end
 
-function _try_deposit(act)
-  -- FIXME dec is "Deposit all items into ender chest from slot 1"
+function _try_give(act)
+  -- FIXME gec is "Deposit all items into ender chest from slot 1"
   -- which is clearly way too much to have in a single action.
-  if act ~= "dec" then
-    error("Unknown deposit action " .. act)
+  if act == "gec" then
+    return _gec(act)
   end
 
+  local detect_f, give_f = nil, nil
+  if (act == "gup") then
+    detect_f = turtle.detectUp
+    give_f = turtle.dropUp
+  elseif (act == "gdn") then
+    detect_f = turtle.detectDown
+    give_f = turtle.dropDown
+  elseif (act == "gfw") then
+    detect_f = turtle.detect
+    give_f = turtle.drop
+  else error("Unknown give action " .. act)
+  end
+
+  if not detect_f() then
+    _transient_error("No block detected for giving items to")
+  end
+  for i=1,16 do
+    if turtle.getItemCount(i) > 0 then
+      turtle.select(i)
+      give_f()
+    end
+  end
+end
+
+function _try_take(act)
+  local detect_f, take_f = nil, nil
+  if (act == "tup") then
+    detect_f = turtle.detectUp
+    take_f = turtle.dropUp
+  elseif (act == "tdn") then
+    detect_f = turtle.detectDown
+    take_f = turtle.dropDown
+  elseif (act == "tfw") then
+    detect_f = turtle.detect
+    take_f = turtle.drop
+  else error("Unknown take action " .. act)
+  end
+
+  if not detect_f() then
+    _transient_error("No block detected for giving items to")
+  end
+  local took = false
+  repeat
+    took = take_f()
+  until took == false
+end
+
+function _gec(act)
   turtle.select(1)
-  placed = turtle.place()
+  local placed = turtle.place()
   if not placed then
     _transient_error("Cannot place ender chest")
   end
@@ -155,6 +200,9 @@ function _try_deposit(act)
   turtle.dig()
 end
 
+function _try_take(act)
+end
+
 _action_fn_table = {
   move = _try_move,
   turn = _try_turn,
@@ -163,7 +211,8 @@ _action_fn_table = {
   attack = _try_attack,
   mine = _try_mine,
   refuel = _try_refuel,
-  deposit = _try_deposit
+  give = _try_give,
+  take = _try_take
 }
 
 _action_cat_table = {
@@ -186,7 +235,13 @@ _action_cat_table = {
   mdn = "mine",
   mfw = "mine",
   rfl = "refuel",
-  dec = "deposit"
+  gec = "give",
+  gup = "give",
+  gdn = "give",
+  gfw = "give",
+  tup = "take",
+  tdn = "take",
+  tfw = "take"
 }
 
 function _perform_action(act, counter)
